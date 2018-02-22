@@ -1327,6 +1327,12 @@ function SimpleMDE(options) {
 		}
 	}
 
+	// Add custom toolbar actions
+	if (options.additionalToolbarButtons !== undefined) {
+		for (var index in options.additionalToolbarButtons) {
+			options.toolbar.push(options.additionalToolbarButtons[index]);
+		}
+	}
 
 	// Handle status bar
 	if(!options.hasOwnProperty("status")) {
@@ -1686,11 +1692,9 @@ SimpleMDE.prototype.createToolbar = function(items) {
 		// Don't include trailing separators
 		if(items[i] === "|") {
 			var nonSeparatorIconsFollow = false;
-
-			for(var x = (i + 1); x < items.length; x++) {
-				if(items[x] !== "|" && (!self.options.hideIcons || self.options.hideIcons.indexOf(items[x].name) == -1)) {
-					nonSeparatorIconsFollow = true;
-				}
+			var x = Math.min(i + 1, items.length - 1);
+			if(items[x] !== "|" && (!self.options.hideIcons || self.options.hideIcons.indexOf(items[x].name) == -1)) {
+				nonSeparatorIconsFollow = true;
 			}
 
 			if(!nonSeparatorIconsFollow)
