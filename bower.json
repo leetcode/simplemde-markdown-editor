@@ -1,11 +1,12 @@
 {
 	"name": "simplemde",
 	"version": "1.11.2",
-	"homepage": "https://github.com/NextStepWebs/simplemde-markdown-editor",
+	"homepage": "https://github.com/clockwork-it/simplemde-markdown-editor-mention",
 	"authors": [
-		"Wes Cossick <https://wescossick.com>"
+		"Wes Cossick <https://wescossick.com>",
+		"Andreas Eckersperger <andreas.eckersperger@clockwork-it.de>"
 	],
-	"description": "A simple, beautiful, and embeddable JavaScript Markdown editor.",
+	"description": "A simple, beautiful, and embeddable JavaScript Markdown editor with mention support.",
 	"main": ["src/js/simplemde.js", "src/css/simplemde.css"],
 	"keywords": [
 		"embeddable",
