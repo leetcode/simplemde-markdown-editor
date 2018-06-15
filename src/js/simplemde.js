@@ -6,6 +6,7 @@ require("./codemirror/tablist");
 require("codemirror/addon/display/fullscreen.js");
 require("codemirror/mode/markdown/markdown.js");
 require("codemirror/addon/mode/overlay.js");
+require("codemirror/addon/hint/show-hint.js");
 require("codemirror/addon/display/placeholder.js");
 require("codemirror/addon/selection/mark-selection.js");
 require("codemirror/mode/gfm/gfm.js");
@@ -13,6 +14,54 @@ require("codemirror/mode/xml/xml.js");
 var CodeMirrorSpellChecker = require("codemirror-spell-checker");
 var marked = require("marked");
 
+var currentEditorHelperHint;
+
+CodeMirror.defineOption("autoSuggest", [], function(cm, autoSuggestOptions, old) {
+	cm.on("inputRead", function(cm, change) {
+		var mode = cm.getModeAt(cm.getCursor());
+
+		if(mode.name === autoSuggestOptions.mode && autoSuggestOptions.startChars.indexOf(change.text[0]) != -1) {
+
+			currentEditorHelperHint = autoSuggestOptions;
+			currentEditorHelperHint.startChar = change.text[0];
+
+			cm.showHint({
+				completeSingle: false,
+				closeCharacters: /[\v()\[\]{};:>,]/,
+				hint: function(cm, options) {
+					var cur = cm.getCursor(),
+						token = cm.getTokenAt(cur);
+					var start = token.start + 1,
+						end = token.end;
+
+					var line = cm.getCursor().line,
+						ch = cm.getCursor().ch,
+						stringToMatch = currentEditorHelperHint.startChar,
+						n = stringToMatch.length,
+						lineToStarChar = cm.getLine(line).substring(0, token.start + 1),
+						charBeforeStarChar = lineToStarChar.substring(cm.getLine(line).lastIndexOf(currentEditorHelperHint.startChar) - 1, cm.getLine(line).lastIndexOf(currentEditorHelperHint.startChar)),
+						stringToTest = lineToStarChar.substring(cm.getLine(line).lastIndexOf(currentEditorHelperHint.startChar), token.start + 1);
+
+					if(charBeforeStarChar != ' ' && charBeforeStarChar != '') {
+						return false;
+					}
+
+					var listCallback = currentEditorHelperHint.listCallback(stringToTest);
+
+					if(listCallback.length == 0) {
+						return false;
+					}
+
+					return {
+						list: listCallback,
+						from: CodeMirror.Pos(cur.line, cm.getLine(line).lastIndexOf(currentEditorHelperHint.startChar)),
+						to: CodeMirror.Pos(cur.line, end)
+					};
+				}
+			});
+		}
+	});
+});
 
 // Some variables
 var isMac = /Mac/.test(navigator.platform);
@@ -1498,7 +1547,8 @@ SimpleMDE.prototype.render = function(el) {
 		lineWrapping: (options.lineWrapping === false) ? false : true,
 		allowDropFileTypes: ["text/plain"],
 		placeholder: options.placeholder || el.getAttribute("placeholder") || "",
-		styleSelectedText: (options.styleSelectedText != undefined) ? options.styleSelectedText : true
+		styleSelectedText: (options.styleSelectedText != undefined) ? options.styleSelectedText : true,
+		autoSuggest: (options.autoSuggest != undefined) ? options.autoSuggest : NULL
 	});
 
 	if(options.forceSync === true) {

@@ -1,6 +1,7 @@
 localtesting/
 node_modules/
 bower_components/
+debug/
 
 #For IDE
 *.iml
