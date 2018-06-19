@@ -1,3 +1,4 @@
+/* eslint-disable no-useless-escape */
 /*global require,module*/
 "use strict";
 var CodeMirror = require("codemirror");
@@ -5,6 +6,7 @@ require("codemirror/addon/edit/continuelist.js");
 require("./codemirror/tablist");
 require("codemirror/addon/display/fullscreen.js");
 require("codemirror/mode/markdown/markdown.js");
+require("codemirror/addon/hint/show-hint.js");
 require("codemirror/addon/mode/overlay.js");
 require("codemirror/addon/display/placeholder.js");
 require("codemirror/addon/selection/mark-selection.js");
@@ -12,6 +14,87 @@ require("codemirror/mode/gfm/gfm.js");
 require("codemirror/mode/xml/xml.js");
 var CodeMirrorSpellChecker = require("codemirror-spell-checker");
 var marked = require("marked");
+
+
+var currentEditorHelperHint;
+
+CodeMirror.defineOption("autoSuggest", [], function(cm, autoSuggestOptions) {
+	cm.on("inputRead", function(cm, change) {
+		var mode = cm.getModeAt(cm.getCursor());
+
+		var currentTrigger = undefined;
+		for(var trigger in autoSuggestOptions.triggers) {
+			if(trigger === change.text[0]) {
+				currentTrigger = trigger;
+			}
+		}
+
+		var forEachHint = function(action) {
+			var hintsElement = document.querySelector(".CodeMirror-hints");
+			if(hintsElement) {
+				var hints = hintsElement.querySelectorAll(".CodeMirror-hint");
+				for(var i = 0; i < hints.length; i++) {
+					var hint = hints[i];
+					action(hint);
+				}
+			}
+		};
+
+		var setHintActive = function(event) {
+			forEachHint(function(hint) {
+				hint.classList.remove("CodeMirror-hint-active");
+			});
+			event.target.classList.add("CodeMirror-hint-active");
+		};
+
+		forEachHint(function(hint) {
+			hint.removeEventListener("mouseenter", setHintActive);
+		});
+
+		if(mode.name === autoSuggestOptions.mode && currentTrigger) {
+
+			currentEditorHelperHint = autoSuggestOptions;
+			currentEditorHelperHint.startChar = change.text[0];
+
+			cm.showHint({
+				completeSingle: false,
+				closeCharacters: /[\v()\[\]{};:>,]/,
+				className: "hints",
+				hint: function(cm) {
+					var cur = cm.getCursor(),
+						token = cm.getTokenAt(cur);
+					var start = token.start + 1,
+						end = token.end;
+
+					var line = cm.getCursor().line,
+						lineToStarChar = cm.getLine(line).substring(0, start),
+						charBeforeStarChar = lineToStarChar.substring(cm.getLine(line).lastIndexOf(currentEditorHelperHint.startChar) - 1, cm.getLine(line).lastIndexOf(currentEditorHelperHint.startChar)),
+						stringToTest = lineToStarChar.substring(cm.getLine(line).lastIndexOf(currentEditorHelperHint.startChar), start);
+
+					if(charBeforeStarChar != " " && charBeforeStarChar != "") {
+						return false;
+					}
+
+					var callbackResult = currentEditorHelperHint.triggers[currentTrigger](stringToTest);
+
+					if(callbackResult.length == 0) {
+						return false;
+					}
+
+					return {
+						list: callbackResult,
+						from: CodeMirror.Pos(cur.line, cm.getLine(line).lastIndexOf(currentEditorHelperHint.startChar)),
+						to: CodeMirror.Pos(cur.line, end)
+					};
+				}
+			});
+
+			forEachHint(function(hint) {
+				hint.addEventListener("mouseenter", setHintActive);
+			});
+		}
+	});
+});
 
 
 // Some variables
@@ -1328,8 +1411,8 @@ function SimpleMDE(options) {
 	}
 
 	// Add custom toolbar actions
-	if (options.additionalToolbarButtons !== undefined) {
-		for (var index in options.additionalToolbarButtons) {
+	if(options.additionalToolbarButtons !== undefined) {
+		for(var index in options.additionalToolbarButtons) {
 			options.toolbar.push(options.additionalToolbarButtons[index]);
 		}
 	}
@@ -1498,7 +1581,8 @@ SimpleMDE.prototype.render = function(el) {
 		lineWrapping: (options.lineWrapping === false) ? false : true,
 		allowDropFileTypes: ["text/plain"],
 		placeholder: options.placeholder || el.getAttribute("placeholder") || "",
-		styleSelectedText: (options.styleSelectedText != undefined) ? options.styleSelectedText : true
+		styleSelectedText: (options.styleSelectedText != undefined) ? options.styleSelectedText : true,
+		autoSuggest: (options.autoSuggest != undefined) ? options.autoSuggest : null,
 	});
 
 	if(options.forceSync === true) {
