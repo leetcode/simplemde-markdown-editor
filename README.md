@@ -9,10 +9,9 @@ var md = new SimpleMDE(
     autoSuggest: 
     {
         mode: 'markdown',
-        startChars: ['@', '#'],
-        listCallback: function(stringToTest)
-        {
-            return [
+        triggers: {
+            '@': function(stringToTest) {
+                return [
                     {
                         text: 'Thomas ',
                         displayText: 'Thomas'
@@ -26,7 +25,24 @@ var md = new SimpleMDE(
                         displayText: 'Peter'
                     }
                 ];
-        }
-    }
+            },
+            '#': function(stringToTest) {
+                return [
+                    {
+                        text: 'Two Sum ',
+                        displayText: 'Two Sum'
+                    },
+                    {
+                        text: '3Sum ',
+                        displayText: '3Sum'
+                    },
+                    {
+                        text: '4Sum ',
+                        displayText: '4Sum'
+                    }
+                ];
+            }
+        },
+    },
 });
 ```
